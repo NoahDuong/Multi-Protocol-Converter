@@ -14,7 +14,7 @@ public:
   void print(const String& text);
   void print(const char* text);
   void print(int num);
-  void print(float num);
+  void print(float num, int decimalPlaces);
   void print(uint32_t val);
   void print(uint8_t val);
   void print(char val);

@@ -3,6 +3,7 @@
 #include "USB2UART.h"
 #include "USBtoI2C.h"
 #include "USBto1Wire.h"
+#include "USBtoSPI.h"
 
 #define BUTTON_PIN 0
 
@@ -13,7 +14,7 @@ enum Mode {
   MODE_UART_I2C, /// missing
   MODE_ONEWIRE,
   MODE_UART_ONEWIRE, /// missing
-  MODE_SPI,  /// missing
+  MODE_SPI,
   MODE_UART_SPI, /// missing
   MODE_COUNT
 };
@@ -25,7 +26,6 @@ void IRAM_ATTR ISR_changeMode() {
 }
 
 /// git add -A ; git commit -m "add isr service with btn 0 ";
-
 /// git add -A ; git commit -m "add isr service with btn 0 "; git push -u origin master
 
 Mode currentMode = MODE_USB_UART;
@@ -59,6 +59,7 @@ void loop() {
     }
     else if (currentMode == MODE_I2C) USBtoI2C_setup();
     else if (currentMode == MODE_ONEWIRE) USBto1Wire_setup();
+    else if (currentMode == MODE_SPI) USBtoSPI_setup();
   }
   // lastButtonState = buttonState;
 
@@ -66,6 +67,7 @@ void loop() {
   else if (currentMode == MODE_USB_UART) USB2UART_loop();
   else if (currentMode == MODE_I2C) USBtoI2C_loop();
   else if (currentMode == MODE_ONEWIRE) USBto1Wire_loop();
+  else if (currentMode == MODE_SPI) USBtoSPI_loop();
 
   delay(10);
 }

@@ -40,9 +40,9 @@ void LcdDisplay::print(int num) {
   lcd.print(num);
 }
 
-void LcdDisplay::print(float num) {
+void LcdDisplay::print(float num, int decimalPlaces) {
   select();
-  lcd.print(num);
+  lcd.print(num, decimalPlaces);
 }
 
 void LcdDisplay::print(uint32_t val) {

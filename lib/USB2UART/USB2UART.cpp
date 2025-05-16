@@ -11,12 +11,12 @@ static uint32_t uartBaud = 115200; // Tốc độ truyền UART
 void USB2UART_setup() {
   Serial2.begin(uartBaud, SERIAL_8N1, 16, 17);  // RX, TX
   lcd.printStatus("USB", "UART", uartBaud);
-  Serial.println("[USB2UART] Khởi động UART2 thành công.");
+  Serial.println("UART2 online");
 }
 
 void UART1_VS_UART2_setup(){
   Serial1.begin(uartBaud, SERIAL_8N1, UART1_RX, UART1_TX);  // RX, TX
-  Serial.println("[USB2UART] Khởi động UART1 thành công.");
+  Serial.println("UART1 online");
 }
 
 void UART2UART_loop() { /// uart0: stalker, uart1 <-> uart2

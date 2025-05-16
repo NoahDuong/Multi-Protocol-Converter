@@ -7,13 +7,14 @@
 #define BUTTON_PIN 0
 
 enum Mode {
-  MODE_UART,
+  MODE_USB_UART,
+  MODE_UART_UART,
   MODE_I2C,
   MODE_ONEWIRE,
   MODE_COUNT
 };
 
-Mode currentMode = MODE_UART;
+Mode currentMode = MODE_USB_UART;
 LcdDisplay lcd;
 
 void setup() {
@@ -22,6 +23,7 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   lcd.init();
   USB2UART_setup();
+  UART1_VS_UART2_setup();
 }
 
 void loop() {
@@ -34,13 +36,17 @@ void loop() {
     Serial.print("Chuyển sang chế độ: ");
     Serial.println(currentMode);
 
-    if (currentMode == MODE_UART) USB2UART_setup();
+    if (currentMode == MODE_UART_UART || currentMode == MODE_USB_UART) {
+        USB2UART_setup();
+        UART1_VS_UART2_setup();
+    }
     else if (currentMode == MODE_I2C) USBtoI2C_setup();
     else if (currentMode == MODE_ONEWIRE) USBto1Wire_setup();
   }
   lastButtonState = buttonState;
 
-  if (currentMode == MODE_UART) USB2UART_loop();
+  if (currentMode == MODE_UART_UART) UART2UART_loop();
+  else if (currentMode == MODE_USB_UART) USB2UART_loop();
   else if (currentMode == MODE_I2C) USBtoI2C_loop();
   else if (currentMode == MODE_ONEWIRE) USBto1Wire_loop();
 

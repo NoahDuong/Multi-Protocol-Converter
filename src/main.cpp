@@ -4,6 +4,9 @@
 #include "USBtoI2C.h"
 #include "USBto1Wire.h"
 #include "USBtoSPI.h"
+#include "UARTtoI2C.h"
+#include "UARTto1Wire.h"
+#include "UARTtoSPI.h"
 
 #define BUTTON_PIN 0
 
@@ -11,11 +14,11 @@ enum Mode {
   MODE_USB_UART,
   MODE_UART_UART,
   MODE_I2C,
-  MODE_UART_I2C, /// missing
+  MODE_UART_I2C,
   MODE_ONEWIRE,
-  MODE_UART_ONEWIRE, /// missing
+  MODE_UART_ONEWIRE,
   MODE_SPI,
-  MODE_UART_SPI, /// missing
+  MODE_UART_SPI,
   MODE_COUNT
 };
 
@@ -53,13 +56,18 @@ void loop() {
     Serial.print("Chuyển sang chế độ: ");
     Serial.println(currentMode);
 
-    if (currentMode == MODE_UART_UART || currentMode == MODE_USB_UART) {
+    if (currentMode == MODE_USB_UART) {
         USB2UART_setup();
+    }
+    if (currentMode == MODE_UART_UART) {
         UART1_VS_UART2_setup();
     }
     else if (currentMode == MODE_I2C) USBtoI2C_setup();
     else if (currentMode == MODE_ONEWIRE) USBto1Wire_setup();
     else if (currentMode == MODE_SPI) USBtoSPI_setup();
+    else if (currentMode == MODE_UART_SPI) UARTtoSPI_setup();
+    else if (currentMode == MODE_UART_I2C) UARTtoI2C_setup();
+    else if (currentMode == MODE_UART_ONEWIRE) UARTto1Wire_setup();
   }
   // lastButtonState = buttonState;
 
@@ -68,6 +76,8 @@ void loop() {
   else if (currentMode == MODE_I2C) USBtoI2C_loop();
   else if (currentMode == MODE_ONEWIRE) USBto1Wire_loop();
   else if (currentMode == MODE_SPI) USBtoSPI_loop();
-
+  else if (currentMode == MODE_UART_SPI) UARTtoSPI_loop();
+  else if (currentMode == MODE_UART_I2C) UARTtoI2C_loop();
+  else if (currentMode == MODE_UART_ONEWIRE) UARTto1Wire_loop();
   delay(10);
 }

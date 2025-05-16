@@ -45,11 +45,12 @@ void UARTto1Wire_loop() {
       float tempC = sensors.getTempCByIndex(0);
 
       // Gửi kết quả trở lại qua UART1
+      Serial1.print("Temp:");
       if (tempC != DEVICE_DISCONNECTED_C) {
-        Serial1.print("Temp:");
-        Serial1.print(tempC, 2); // 2 chữ số thập phân
+        Serial1.print(tempC); // 2 chữ số thập phân
         Serial1.println("C");
         Serial.printf("[UARTto1Wire] Gửi nhiệt độ: %.2fC qua UART1\n", tempC);
+        Serial.print("[UARTto1Wire] Nhiệt độ (qua UART1): ");
       } else {
         Serial1.println("Error:DS18B20_DISCONNECTED");
         Serial.println("[UARTto1Wire] Lỗi: Cảm biến DS18B20 không kết nối.");
@@ -64,15 +65,15 @@ void UARTto1Wire_loop() {
     float tempC = sensors.getTempCByIndex(0);
 
     lcd.setCursor(0, 0);
-    lcd.print("IN:UART OUT:1W");
+    lcd.print("IN:UART OUT:1-W");
     
     lcd.setCursor(0, 1);
     lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");
 
     if (tempC != DEVICE_DISCONNECTED_C) {
-      lcd.print("T:"); lcd.print(tempC, 2); lcd.print("C");
+      lcd.print("T:"); lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
     } else {
-      lcd.print("Sensor Discon!");
+      lcd.print("Sens Disconnect");
     }
   }
 }

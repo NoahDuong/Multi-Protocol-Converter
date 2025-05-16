@@ -10,9 +10,15 @@ enum Mode {
   MODE_USB_UART,
   MODE_UART_UART,
   MODE_I2C,
+  MODE_UART_I2C, /// missing
   MODE_ONEWIRE,
+  MODE_UART_ONEWIRE, /// missing
+  MODE_SPI,  /// missing
+  MODE_UART_SPI, /// missing
   MODE_COUNT
 };
+
+/// git add -A ; git commit -m "change message! "; git push -u origin master
 
 Mode currentMode = MODE_USB_UART;
 LcdDisplay lcd;

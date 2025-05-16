@@ -18,7 +18,15 @@ enum Mode {
   MODE_COUNT
 };
 
-/// git add -A ; git commit -m "change message! "; git push -u origin master
+bool buttonPressed = false;
+
+void IRAM_ATTR ISR_changeMode() {
+  buttonPressed = 1;
+}
+
+/// git add -A ; git commit -m "add isr service with btn 0 ";
+
+/// git add -A ; git commit -m "add isr service with btn 0 "; git push -u origin master
 
 Mode currentMode = MODE_USB_UART;
 LcdDisplay lcd;
@@ -27,17 +35,20 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(21, 22);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), ISR_changeMode, FALLING);
   lcd.init();
   USB2UART_setup();
   UART1_VS_UART2_setup();
 }
 
 void loop() {
-  static bool lastButtonState = HIGH;
-  bool buttonState = digitalRead(BUTTON_PIN);
+  // static bool lastButtonState = HIGH;
+  // bool buttonState = digitalRead(BUTTON_PIN);
 
-  if (lastButtonState == HIGH && buttonState == LOW) {
-    delay(200); // debounce
+  // if (lastButtonState == HIGH && buttonState == LOW) {
+  if (buttonPressed) {
+    buttonPressed = 0;
+    // delay(200); // debounce
     currentMode = (Mode)((currentMode + 1) % MODE_COUNT);
     Serial.print("Chuyển sang chế độ: ");
     Serial.println(currentMode);
@@ -49,7 +60,7 @@ void loop() {
     else if (currentMode == MODE_I2C) USBtoI2C_setup();
     else if (currentMode == MODE_ONEWIRE) USBto1Wire_setup();
   }
-  lastButtonState = buttonState;
+  // lastButtonState = buttonState;
 
   if (currentMode == MODE_UART_UART) UART2UART_loop();
   else if (currentMode == MODE_USB_UART) USB2UART_loop();

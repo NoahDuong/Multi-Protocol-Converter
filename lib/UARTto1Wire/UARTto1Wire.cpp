@@ -71,7 +71,7 @@ void UARTto1Wire_loop() {
     lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");
 
     if (tempC != DEVICE_DISCONNECTED_C) {
-      lcd.print("T:"); lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
+      lcd.print("  "); lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
     } else {
       lcd.print("Sens Disconnect");
     }

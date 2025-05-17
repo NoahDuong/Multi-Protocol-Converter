@@ -78,9 +78,9 @@ void UARTtoI2C_loop() {
     lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");
 
     if (lux >= 0) {
-      lcd.print("L:"); lcd.print(lux, 2); lcd.print("lx");
+      lcd.print(lux, 2); lcd.print("Lx");
     } else {
-      lcd.print("Sensor Discon!");
+      lcd.print("Error");
     }
   }
 }

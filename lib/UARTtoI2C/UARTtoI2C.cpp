@@ -72,7 +72,7 @@ void UARTtoI2C_loop() {
     float lux = bh.readLux(readTimeMs);
 
     lcd.setCursor(0, 0);
-    lcd.print("IN:UART OUT:I2C");
+    lcd.print("IN:UART  OUT:I2C");
     
     lcd.setCursor(0, 1);
     lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");

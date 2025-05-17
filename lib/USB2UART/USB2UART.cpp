@@ -30,14 +30,13 @@ void UART2UART_loop() { /// uart0: stalker, uart1 <-> uart2
     Serial1.write(rcv);
     Serial.write(rcv);
   }
-
   lcd.setCursor(0, 0);
   lcd.print("IN:UART OUT:UART");
   lcd.setCursor(0, 1);
   lcd.print("SP:");
   lcd.print(uartBaud / 1000);
   lcd.print("kHz");
-  // delay(300);
+  delay(400);
 }
 
 void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
@@ -51,14 +50,13 @@ void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
     Serial.write(rcv);
     Serial1.write(rcv);
   }
-
   lcd.setCursor(0, 0);
   lcd.print("IN:USB  OUT:UART");
   lcd.setCursor(0, 1);
   lcd.print("SP:");
   lcd.print(uartBaud / 1000);
   lcd.print("kHz");
-  // delay(300);
+  delay(400);
 }
 
 // void UART1_TO_UART2_loop(){

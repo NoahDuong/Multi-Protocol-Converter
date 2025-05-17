@@ -133,7 +133,7 @@ void USBtoSPI_loop() {
   Serial.println(z_raw);
 
   Serial.print("[USBtoSPI] Gia toc (X, Y, Z): ");
-  Serial.print(x_g, 2); // 2 chữ số thập phân
+  Serial.print(x_g, 2);
   Serial.print("g\t");
   Serial.print(y_g, 2);
   Serial.print("g\t");
@@ -142,7 +142,7 @@ void USBtoSPI_loop() {
 
   // Hiển thị lên LCD
   lcd.setCursor(0, 0);
-  lcd.print("IN:USB OUT:SPI");
+  lcd.print("IN:USB   OUT:SPI");
   
   lcd.setCursor(0, 1);
   lcd.print("X:"); 
@@ -151,7 +151,6 @@ void USBtoSPI_loop() {
   lcd.print(y_g, 1);
   lcd.print("Z:");
   lcd.print(z_g, 1); 
-  lcd.print("g");
 
   delay(300); // Đọc dữ liệu mỗi 200ms
 }

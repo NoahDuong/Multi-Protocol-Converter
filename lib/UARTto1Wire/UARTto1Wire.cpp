@@ -65,7 +65,7 @@ void UARTto1Wire_loop() {
     float tempC = sensors.getTempCByIndex(0);
 
     lcd.setCursor(0, 0);
-    lcd.print("IN:UART OUT:1-W");
+    lcd.print("IN:UART  OUT:1-W");
     
     lcd.setCursor(0, 1);
     lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");

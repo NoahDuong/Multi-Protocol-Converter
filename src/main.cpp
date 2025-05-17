@@ -54,6 +54,7 @@ void loop() {
     // delay(200); // debounce
     currentMode = (Mode)((currentMode + 1) % MODE_COUNT);
     Serial.print("Chuyển sang chế độ: ");
+    lcd.clear();
     Serial.println(currentMode);
 
     if (currentMode == MODE_USB_UART) {

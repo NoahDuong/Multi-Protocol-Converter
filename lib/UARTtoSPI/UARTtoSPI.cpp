@@ -159,12 +159,12 @@ void UARTtoSPI_loop() {
     float z_g = (float)z_raw / ADXL345_LSB_PER_G;
 
     lcd.setCursor(0, 0);
-    lcd.print("IN:UART OUT:SPI");
+    lcd.print("IN:UART  OUT:SPI");
     
     lcd.setCursor(0, 1);
-    lcd.print("X:"); lcd.print(x_g, 2); lcd.print(" ");
-    lcd.print("Y:"); lcd.print(y_g, 2); lcd.print(" ");
-    lcd.print("Z:"); lcd.print(z_g, 2); 
+    lcd.print("X:"); lcd.print(x_g, 1);
+    lcd.print("Y:"); lcd.print(y_g, 1);
+    lcd.print("Z:"); lcd.print(z_g, 1); 
     lcd.print("g");
   }
 }

@@ -36,7 +36,7 @@ void UART2UART_loop() { /// uart0: stalker, uart1 <-> uart2
   lcd.print("SP:");
   lcd.print(uartBaud / 1000);
   lcd.print("kHz");
-  delay(400);
+  // delay(400);
 }
 
 void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
@@ -56,7 +56,7 @@ void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
   lcd.print("SP:");
   lcd.print(uartBaud / 1000);
   lcd.print("kHz");
-  delay(400);
+  // delay(400);
 }
 
 // void UART1_TO_UART2_loop(){

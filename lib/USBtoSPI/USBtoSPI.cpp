@@ -3,30 +3,26 @@
 #include "USBtoSPI.h"
 #include "LcdDisplay.h"
 
-// Biến extern cho LCD (được định nghĩa trong main.cpp)
 extern LcdDisplay lcd;
+static uint32_t uartBaud = 115200; // Tốc độ truyền UART
 
-// Định nghĩa các chân SPI trên ESP32 (VSPI)
 #define ADXL345_SS_PIN      5   // Chip Select (CS) pin cho ADXL345
 #define ADXL345_SCK_PIN     18  // SPI Clock (SCK)
 #define ADXL345_MISO_PIN    19  // Master In Slave Out (MISO)
 #define ADXL345_MOSI_PIN    23  // Master Out Slave In (MOSI)
 
-// Định nghĩa các địa chỉ thanh ghi của ADXL345
 #define ADXL345_DEVID         0x00 // Device ID
 #define ADXL345_POWER_CTL     0x2D // Power-saving features control
 #define ADXL345_DATA_FORMAT   0x31 // Data format control
 #define ADXL345_DATAX0        0x32 // X-axis data 0
-
-// Các giá trị cấu hình cho thanh ghi POWER_CTL
 #define ADXL345_MEASURE       0x08 // Chế độ đo lường (Measurement Mode)
-
-// Các giá trị cấu hình cho thanh ghi DATA_FORMAT
 #define ADXL345_FULL_RES      0x08 // Full resolution (10-bit to 13-bit for 2g to 16g ranges)
 #define ADXL345_RANGE_2G      0x00 // +/- 2g
 
 // Hệ số chuyển đổi từ giá trị thô sang gia tốc (g).
 const float ADXL345_LSB_PER_G = 256.0; // Đối với dải +/-2g, full resolution
+float x_offset= 0, y_offset= 0, z_offset= 0;
+const int CALIB_SAMPLES=100;
 
 // Khởi tạo đối tượng SPI
 SPIClass *spi_adxl345 = NULL; // Con trỏ đến đối tượng SPIClass
@@ -68,13 +64,24 @@ void readRegisters(byte regAddress, byte numBytes, byte *buffer) {
   spi_adxl345->endTransaction();
 }
 
-/**
- * @brief Hàm setup cho chế độ USB to SPI (ADXL345).
- * Khởi tạo SPI bus và cấu hình cảm biến ADXL345.
- */
+void calibrateStatic(){
+  long sumX=0, sumY=0, sumZ=0;
+  byte raw[6];
+  for (int i=0; i< CALIB_SAMPLES; i++){
+    readRegisters(ADXL345_DATAX0, 6, raw);
+    int16_t xr = (raw[1] << 8) | raw[0];
+    int16_t yr = (raw[3] << 8) | raw[2];
+    int16_t zr = (raw[5] << 8) | raw[4];
+    sumX += xr; sumY+= yr; sumZ += zr;
+    delay(10);
+  }
+  x_offset = (sumX/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+  y_offset = (sumY/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+  z_offset = (sumZ/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+}
+
 void USBtoSPI_setup() {
   Serial.println("[USBtoSPI] Khởi tạo ADXL345 qua SPI...");
-
   // Cấu hình chân CS
   pinMode(ADXL345_SS_PIN, OUTPUT);
   digitalWrite(ADXL345_SS_PIN, HIGH); // CS ban đầu ở mức cao
@@ -100,18 +107,15 @@ void USBtoSPI_setup() {
     writeRegister(ADXL345_POWER_CTL, ADXL345_MEASURE);
     Serial.println("[USBtoSPI] ADXL345 da duoc cau hinh.");
   }
-
-  // Cập nhật trạng thái trên LCD
+  Serial.println("Gia tri tinh...");
+  calibrateStatic();
+  Serial.printf("Offsets: X=%.3f Y=%3f Z=%3f\n", x_offset,  y_offset, z_offset);
   lcd.printStatus("USB", "SPI", spiSpeed);
   delay(100); // Đợi một chút để cảm biến khởi động
 }
 
-/**
- * @brief Hàm loop cho chế độ USB to SPI (ADXL345).
- * Đọc dữ liệu gia tốc và hiển thị lên Serial Monitor và LCD.
- */
 void USBtoSPI_loop() {
-  byte rawData[6]; // X-low, X-high, Y-low, Y-high, Z-low, Z-high
+  byte rawData[6];
   readRegisters(ADXL345_DATAX0, 6, rawData);
 
   // Kết hợp các byte thấp và cao thành giá trị 16-bit
@@ -119,11 +123,15 @@ void USBtoSPI_loop() {
   int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
   int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
 
-  // Chuyển đổi giá trị thô sang gia tốc thực (g)
   float x_g = (float)x_raw / ADXL345_LSB_PER_G;
   float y_g = (float)y_raw / ADXL345_LSB_PER_G;
   float z_g = (float)z_raw / ADXL345_LSB_PER_G;
 
+  float x_dyn = x_g - x_offset;
+  float y_dyn = y_g - y_offset;
+  float z_dyn = z_g - z_offset;
+
+  float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
   // Hiển thị lên Serial Monitor
   Serial.print("[USBtoSPI] Gia tri thap (X, Y, Z): ");
   Serial.print(x_raw);
@@ -140,17 +148,18 @@ void USBtoSPI_loop() {
   Serial.print(z_g, 2);
   Serial.println("g");
 
+  Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
   // Hiển thị lên LCD
   lcd.setCursor(0, 0);
   lcd.print("IN:USB   OUT:SPI");
   
   lcd.setCursor(0, 1);
-  lcd.print("X:"); 
-  lcd.print(x_g, 1);
-  lcd.print("Y:");
-  lcd.print(y_g, 1);
-  lcd.print("Z:");
-  lcd.print(z_g, 1); 
+  lcd.print("SP:");
+  lcd.print(uartBaud/1000);
+  lcd.print("KHz ");
+  lcd.print("A=");
+  lcd.print(a_dyn, 1);
+  lcd.print("g");
 
-  delay(300); // Đọc dữ liệu mỗi 200ms
+  delay(300);
 }

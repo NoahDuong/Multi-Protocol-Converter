@@ -10,7 +10,7 @@
 
 #define BUTTON_USB 0     // Nút chuyển các chế độ USB → ...
 #define BUTTON_UART 4    // Nút chuyển các chế độ UART → ...
-
+//git add -A; git commit -m " "; git push -u origin master        
 // Chỉ định chế độ hoạt động
 enum ModeType {
   MODE_USB,

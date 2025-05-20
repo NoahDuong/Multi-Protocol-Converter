@@ -5,29 +5,19 @@
 #include "Bh1750Sensor.h"
 #include "TCA9548A.h" // Để sử dụng tcaselect
 
-// Biến extern cho LCD (được định nghĩa trong main.cpp)
 extern LcdDisplay lcd;
-static Bh1750Sensor bh; // Đối tượng cảm biến BH1750
+static Bh1750Sensor bh;
 
-// Cấu hình UART
-#define UART1_TX_PIN 26 // Chân TX của UART1
-#define UART1_RX_PIN 27 // Chân RX của UART1
-static uint32_t uartBaudRate = 115200; // Tốc độ baud cho UART1
-
-// Cấu hình I2C (thường dùng chân SDA=21, SCL=22)
-static uint32_t i2cFreq = 100000; // 100 kHz
-
+#define UART1_TX_PIN 26
+#define UART1_RX_PIN 27
 
 void UARTtoI2C_setup() {
-  // Khởi tạo UART1 nếu chưa được khởi tạo
-  Serial1.begin(uartBaudRate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
-  Serial.println("[UARTtoI2C] Khởi động UART1 thành công.");
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
+  Serial.printf("[UARTtoI2C] Khởi động UART1 thành công vs Sp %d", globaluartbaudrate);
 
-  // Khởi tạo giao tiếp Wire (I2C)
-  // Đảm bảo Wire.begin đã được gọi trong setup() của main hoặc gọi lại ở đây
-  Wire.begin(21, 22, i2cFreq); // SDA, SCL, tần số
-  Wire.setClock(i2cFreq);
-  Serial.printf("[UARTtoI2C] Khởi tạo I2C tần số %luHz\n", i2cFreq);
+  Wire.begin(21, 22, globali2cFrequency); // SDA, SCL, tần số
+  Wire.setClock(globali2cFrequency);
+  Serial.printf("[UARTtoI2C] Khởi tạo I2C tần số %luKHz\n", globali2cFrequency);
 
   // Khởi tạo cảm biến BH1750
   if (!bh.begin()) {
@@ -37,14 +27,14 @@ void UARTtoI2C_setup() {
   }
 
   // Cập nhật trạng thái trên LCD
-  lcd.printStatus("UART", "I2C", uartBaudRate); // Hiển thị tốc độ UART
+  lcd.printStatus("UART", "I2C", globali2cFrequency);
   delay(100);
 }
 
 
 void UARTtoI2C_loop() {
   static unsigned long lastReadTime = 0;
-  const long readInterval = 500; // Đọc mỗi 500ms để không quá tải cảm biến
+  const long readInterval = 500; 
 
   if (Serial1.available()) {
     char command = Serial1.read();
@@ -75,10 +65,10 @@ void UARTtoI2C_loop() {
     lcd.print("IN:UART  OUT:I2C");
     
     lcd.setCursor(0, 1);
-    lcd.print("SP:"); lcd.print(uartBaudRate / 1000); lcd.print("k ");
+    lcd.print("SP:"); lcd.print(globali2cFrequency/ 1000); lcd.print("KHz");
 
     if (lux >= 0) {
-      lcd.print(lux, 2); lcd.print("Lx");
+      lcd.print(lux, 1); lcd.print("Lx");
     } else {
       lcd.print("Error");
     }

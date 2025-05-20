@@ -1,6 +1,7 @@
 #ifndef USB2UART_H
 #define USB2UART_H
 
+extern uint32_t globaluartbaudrate;
 void USB2UART_setup();
 void UART2UART_loop();
 void USB2UART_loop();

@@ -7,11 +7,9 @@
 
 extern LcdDisplay lcd;
 static Bh1750Sensor bh;
-static uint32_t i2cFreq = 100000;
 
 void USBtoI2C_setup() {
-  Wire.begin(21, 22, i2cFreq);
-  lcd.printStatus("USB", "I2C", i2cFreq);
+  lcd.printStatus("USB", "I2C", globali2cFrequency);
 
   if (!bh.begin()) {
     Serial.println("Không tìm thấy BH1750!");
@@ -40,7 +38,7 @@ void USBtoI2C_loop() {
 
   lcd.setCursor(0, 1);
   lcd.print("SP:");
-  lcd.print(i2cFreq / 1000);
+  lcd.print(globali2cFrequency / 1000);
   lcd.print("kHz ");
 
   if (lux >= 0) {
@@ -49,7 +47,7 @@ void USBtoI2C_loop() {
     lcd.print(buf);
     lcd.print("lx");
   } else {
-    lcd.print(" Err ");
+    lcd.print("Error");
   }
 
   delay(1000);

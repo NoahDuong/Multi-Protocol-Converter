@@ -3,25 +3,19 @@
 #include "UARTtoSPI.h"
 #include "LcdDisplay.h"
 
-// Biến extern cho LCD (được định nghĩa trong main.cpp)
 extern LcdDisplay lcd;
-
-// Định nghĩa các chân SPI trên ESP32 (VSPI)
 #define ADXL345_SS_PIN      5   // Chip Select (CS) pin cho ADXL345
 #define ADXL345_SCK_PIN     18  // SPI Clock (SCK)
 #define ADXL345_MISO_PIN    19  // Master In Slave Out (MISO)
 #define ADXL345_MOSI_PIN    23  // Master Out Slave In (MOSI)
 
-// Định nghĩa các địa chỉ thanh ghi của ADXL345
 #define ADXL345_DEVID         0x00 // Device ID
 #define ADXL345_POWER_CTL     0x2D // Power-saving features control
 #define ADXL345_DATA_FORMAT   0x31 // Data format control
 #define ADXL345_DATAX0        0x32 // X-axis data 0
 
-// Các giá trị cấu hình cho thanh ghi POWER_CTL
 #define ADXL345_MEASURE       0x08 // Chế độ đo lường (Measurement Mode)
 
-// Các giá trị cấu hình cho thanh ghi DATA_FORMAT
 #define ADXL345_FULL_RES      0x08 // Full resolution (10-bit to 13-bit for 2g to 16g ranges)
 #define ADXL345_RANGE_2G      0x00 // +/- 2g
 
@@ -30,16 +24,15 @@ const float ADXL345_LSB_PER_G = 256.0; // Đối với dải +/-2g, full resolut
 
 // Khởi tạo đối tượng SPI
 SPIClass *spi_adxl345_uart = NULL; // Dùng tên khác để tránh trùng với USBtoSPI
-static uint32_t spiSpeed = 4000000; // 4 MHz
 
 // Cấu hình UART
 #define UART1_TX_PIN 26 // Chân TX của UART1
 #define UART1_RX_PIN 27 // Chân RX của UART1
 static uint32_t uartBaudRate = 115200; // Tốc độ baud cho UART1
 
-// Hàm ghi một byte vào thanh ghi của ADXL345 (phiên bản cho UARTtoSPI)
+// Hàm ghi một byte vào thanh ghi của ADXL345
 void writeRegister_UART(byte regAddress, byte value) {
-  spi_adxl345_uart->beginTransaction(SPISettings(spiSpeed, MSBFIRST, SPI_MODE3));
+  spi_adxl345_uart->beginTransaction(SPISettings(globalspiFrequency, MSBFIRST, SPI_MODE3));
   digitalWrite(ADXL345_SS_PIN, LOW);
   spi_adxl345_uart->transfer(regAddress);
   spi_adxl345_uart->transfer(value);
@@ -50,7 +43,7 @@ void writeRegister_UART(byte regAddress, byte value) {
 // Hàm đọc một byte từ thanh ghi của ADXL345 (phiên bản cho UARTtoSPI)
 byte readRegister_UART(byte regAddress) {
   byte value = 0;
-  spi_adxl345_uart->beginTransaction(SPISettings(spiSpeed, MSBFIRST, SPI_MODE3));
+  spi_adxl345_uart->beginTransaction(SPISettings(globalspiFrequency, MSBFIRST, SPI_MODE3));
   digitalWrite(ADXL345_SS_PIN, LOW);
   spi_adxl345_uart->transfer(regAddress | 0x80);
   value = spi_adxl345_uart->transfer(0x00);
@@ -61,7 +54,7 @@ byte readRegister_UART(byte regAddress) {
 
 // Hàm đọc nhiều byte từ các thanh ghi liên tiếp của ADXL345 (phiên bản cho UARTtoSPI)
 void readRegisters_UART(byte regAddress, byte numBytes, byte *buffer) {
-  spi_adxl345_uart->beginTransaction(SPISettings(spiSpeed, MSBFIRST, SPI_MODE3));
+  spi_adxl345_uart->beginTransaction(SPISettings(globalspiFrequency, MSBFIRST, SPI_MODE3));
   digitalWrite(ADXL345_SS_PIN, LOW);
   spi_adxl345_uart->transfer(regAddress | 0xC0);
   for (int i = 0; i < numBytes; i++) {
@@ -109,7 +102,7 @@ void UARTtoSPI_setup() {
   }
 
   // Cập nhật trạng thái trên LCD
-  lcd.printStatus("UART", "SPI", uartBaudRate); // Hiển thị tốc độ UART
+  lcd.printStatus("UART", "SPI", globalspiFrequency);
   delay(100);
 }
 

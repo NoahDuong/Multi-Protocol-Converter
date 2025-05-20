@@ -3,20 +3,19 @@
 #include "LcdDisplay.h"
 
 extern LcdDisplay lcd;
-static uint32_t uartBaud = 115200; // Tốc độ truyền UART
 
 #define UART1_TX 26 // <---> CP2102.RX
 #define UART1_RX 27 // <---> CP2102.TX
 
 void USB2UART_setup() {
-  Serial2.begin(uartBaud, SERIAL_8N1, 16, 17);  // RX, TX
-  lcd.printStatus("USB", "UART", uartBaud);
-  Serial.println("UART2 online");
+  Serial2.begin(globaluartbaudrate, SERIAL_8N1, 16, 17);  // RX, TX
+  lcd.printStatus("USB", "UART", globaluartbaudrate);
+  Serial.printf("UART2 online vs Sp %d.\n", globaluartbaudrate);
 }
 
 void UART1_VS_UART2_setup(){
-  Serial1.begin(uartBaud, SERIAL_8N1, UART1_RX, UART1_TX);  // RX, TX
-  Serial.println("UART1 online");
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX);  // RX, TX
+  Serial.printf("UART1 online vs Sp %d.\n", globaluartbaudrate);
 }
 
 void UART2UART_loop() { /// uart0: stalker, uart1 <-> uart2
@@ -34,9 +33,8 @@ void UART2UART_loop() { /// uart0: stalker, uart1 <-> uart2
   lcd.print("IN:UART OUT:UART");
   lcd.setCursor(0, 1);
   lcd.print("SP:");
-  lcd.print(uartBaud / 1000);
+  lcd.print(globaluartbaudrate/ 1000);
   lcd.print("kHz");
-  // delay(400);
 }
 
 void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
@@ -54,16 +52,6 @@ void USB2UART_loop() { /// uart1: stalker, uart0 (WHITE) <-> uart2
   lcd.print("IN:USB  OUT:UART");
   lcd.setCursor(0, 1);
   lcd.print("SP:");
-  lcd.print(uartBaud / 1000);
+  lcd.print(globaluartbaudrate/ 1000);
   lcd.print("kHz");
-  // delay(400);
 }
-
-// void UART1_TO_UART2_loop(){
-//   if (Serial.available()) {
-//     Serial2.write(Serial.read());
-//   }
-//   if (Serial2.available()) {
-//     Serial.write(Serial2.read());
-//   }
-// }

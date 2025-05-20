@@ -11,13 +11,18 @@ static DallasTemperature sensors(&oneWire);
 
 void USBto1Wire_setup() {
   sensors.begin();
-  lcd.printStatus("USB", "1-Wire", 16300);  // 16.3 kbps (mặc định)
+  lcd.printStatus("USB", "1-Wire", onewirespeed);
   Serial.println("[USBto1Wire] Cảm biến DS18B20 khởi động.");
 }
 
 void USBto1Wire_loop() {
-  sensors.requestTemperatures();
-  float tempC = sensors.getTempCByIndex(0);
+  static unsigned long lastReadTime = 0;
+  const long readInterval = 1000;
+
+  if (millis() - lastReadTime >= readInterval) {
+    lastReadTime = millis();
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
 
   // In ra Serial Monitor
   Serial.print("[USBto1Wire] Nhiệt độ: ");
@@ -30,10 +35,12 @@ void USBto1Wire_loop() {
 
   // lcd
   lcd.setCursor(0, 0);
-  lcd.print("IN:USB OUT:1-Wire");
+  lcd.print("IN:USB  OUT:1-Wi");
 
   lcd.setCursor(0, 1);
-  lcd.print("SP:16kHz ");
+  lcd.print("SP:");
+  lcd.print(onewirespeed/1000);
+  lcd.print("KHz");
 
   if (tempC != DEVICE_DISCONNECTED_C) {
     char buf[10];
@@ -43,7 +50,6 @@ void USBto1Wire_loop() {
     lcd.print("C");
   } else {
     lcd.print(" Err ");
+    }
   }
-
-  delay(1000);
 }

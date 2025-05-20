@@ -4,7 +4,6 @@
 #include "LcdDisplay.h"
 
 extern LcdDisplay lcd;
-static uint32_t uartBaud = 115200; // Tốc độ truyền UART
 
 #define ADXL345_SS_PIN      5   // Chip Select (CS) pin cho ADXL345
 #define ADXL345_SCK_PIN     18  // SPI Clock (SCK)
@@ -155,7 +154,7 @@ void USBtoSPI_loop() {
   
   lcd.setCursor(0, 1);
   lcd.print("SP:");
-  lcd.print(uartBaud/1000);
+  lcd.print(globalspiFrequency/1000);
   lcd.print("KHz ");
   lcd.print("A=");
   lcd.print(a_dyn, 1);

@@ -8,9 +8,11 @@
 #include "UARTto1Wire.h"
 #include "UARTtoSPI.h"
 
-#define BUTTON_USB 0     // Nút chuyển các chế độ USB → ...
-#define BUTTON_UART 4    // Nút chuyển các chế độ UART → ...
-//git add -A; git commit -m " "; git push -u origin master        
+#define BUTTON_USB 0     // Nút chuyển các chế độ USB <-> ...
+#define BUTTON_UART 4    // Nút chuyển các chế độ UART <-> ...
+
+//git add -A; git commit -m " "; git push -u origin master    
+
 // Chỉ định chế độ hoạt động
 enum ModeType {
   MODE_USB,
@@ -33,6 +35,12 @@ enum UARTMode {
   UART_MODE_COUNT
 };
 
+//Biến tốc độ truyền tải
+uint32_t globaluartbaudrate = 115200;
+uint32_t globali2cFrequency = 400000;
+uint32_t globalspiFrequency = 1000000;
+uint32_t onewirespeed = 16300;
+
 // Biến toàn cục
 volatile ModeType currentModeType = MODE_USB; // Mode mặc định là USB
 volatile USBMode currentUSBMode = USB_UART;
@@ -40,11 +48,11 @@ volatile UARTMode currentUARTMode = UART_UART;
 volatile bool usbButtonPressed = false;
 volatile bool uartButtonPressed = false;
 unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = 200;
+const unsigned long debounceDelay = 100;
 
 LcdDisplay lcd;
 
-// ISR handler cho nút USB
+// ISR USB
 void IRAM_ATTR ISR_usbButton() {
   if ((millis() - lastDebounceTime) > debounceDelay) {
     usbButtonPressed = true;
@@ -52,7 +60,7 @@ void IRAM_ATTR ISR_usbButton() {
   }
 }
 
-// ISR handler cho nút UART
+// ISR UART
 void IRAM_ATTR ISR_uartButton() {
   if ((millis() - lastDebounceTime) > debounceDelay) {
     uartButtonPressed = true;
@@ -62,26 +70,23 @@ void IRAM_ATTR ISR_uartButton() {
 
 // Xử lý chuyển chế độ USB
 void processUSBMode() {
+  Serial.printf("[M] Chuyển chế độ USB: %d\n", currentUSBMode);
   lcd.clear();
   switch (currentUSBMode) {
     case USB_UART:
-      Serial.println("Chế độ: USB → UART");
-      // lcd.print("USB -> UART");
+      Serial.println("Chế độ: USB <-> UART (serial2)");
       USB2UART_setup();
       break;
     case USB_I2C:
-      Serial.println("Chế độ: USB → I2C");
-      // lcd.print("USB -> I2C");
+      Serial.println("Chế độ: USB <-> I2C (BH1750)");
       USBtoI2C_setup();
       break;
     case USB_SPI:
-      Serial.println("Chế độ: USB → SPI");
-      // lcd.print("USB -> SPI");
+      Serial.println("Chế độ: USB <-> SPI (ADXL345)");
       USBtoSPI_setup();
       break;
     case USB_ONEWIRE:
-      Serial.println("Chế độ: USB → 1-Wire");
-      // lcd.print("USB -> 1-Wire");
+      Serial.println("Chế độ: USB <-> 1-Wire (DS18B20)");
       USBto1Wire_setup();
       break;
     default:
@@ -96,23 +101,19 @@ void processUARTMode() {
   lcd.clear();
   switch (currentUARTMode) {
     case UART_UART:
-      Serial.println("Chế độ: UART ↔ UART");
-      // lcd.print("UART <-> UART");
+      Serial.println("Chế độ: UART1 <-> UART2");
       UART1_VS_UART2_setup();
       break;
     case UART_I2C:
-      Serial.println("Chế độ: UART → I2C");
-      // lcd.print("UART -> I2C");
+      Serial.println("Chế độ: UART <-> I2C");
       UARTtoI2C_setup();
       break;
     case UART_SPI:
-      Serial.println("Chế độ: UART → SPI");
-      // lcd.print("UART -> SPI");
+      Serial.println("Chế độ: UART <-> SPI");
       UARTtoSPI_setup();
       break;
     case UART_ONEWIRE:
-      Serial.println("Chế độ: UART → 1-Wire");
-      // lcd.print("UART -> 1-Wire");
+      Serial.println("Chế độ: UART <-> 1-Wire");
       UARTto1Wire_setup();
       break;
     default:
@@ -123,8 +124,10 @@ void processUARTMode() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  Wire.begin(21, 22);
+  Serial.begin(globaluartbaudrate);
+  while (!Serial && millis() < 5000);
+  Wire.begin(21, 22, globali2cFrequency);
+  Serial.println("[M] I2C bus initiliazed");
 
   // Cấu hình các nút nhấn
   pinMode(BUTTON_USB, INPUT_PULLUP);
@@ -141,7 +144,7 @@ void setup() {
   currentModeType = MODE_USB;
   processUSBMode();
 
-  Serial.println("Khởi động xong. Chế độ mặc định: USB → UART");
+  Serial.println("Khởi động xong. Chế độ mặc định: USB <-> UART");
 }
 
 void loop() {
@@ -153,7 +156,6 @@ void loop() {
     processUSBMode();
   }
 
-  // Xử lý nút UART
   if (uartButtonPressed) {
     uartButtonPressed = false;
     currentModeType = MODE_UART;
@@ -170,7 +172,7 @@ void loop() {
       case USB_ONEWIRE: USBto1Wire_loop(); break;
     }
   } 
-  else { // MODE_UART
+  else {
     switch (currentUARTMode) {
       case UART_UART: UART2UART_loop(); break;
       case UART_I2C: UARTtoI2C_loop(); break;

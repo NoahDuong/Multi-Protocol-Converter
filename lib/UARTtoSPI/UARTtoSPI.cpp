@@ -13,14 +13,14 @@ extern LcdDisplay lcd;
 #define ADXL345_POWER_CTL     0x2D // Power-saving features control
 #define ADXL345_DATA_FORMAT   0x31 // Data format control
 #define ADXL345_DATAX0        0x32 // X-axis data 0
-
 #define ADXL345_MEASURE       0x08 // Chế độ đo lường (Measurement Mode)
-
 #define ADXL345_FULL_RES      0x08 // Full resolution (10-bit to 13-bit for 2g to 16g ranges)
 #define ADXL345_RANGE_2G      0x00 // +/- 2g
 
 // Hệ số chuyển đổi từ giá trị thô sang gia tốc (g).
 const float ADXL345_LSB_PER_G = 256.0; // Đối với dải +/-2g, full resolution
+float X_uart_offset = 0, y_uart_offset = 0, z_uart_offset = 0;
+const int CALIB_SAMPLES = 100;
 
 // Khởi tạo đối tượng SPI
 SPIClass *spi_adxl345_uart = NULL; // Dùng tên khác để tránh trùng với USBtoSPI
@@ -28,7 +28,6 @@ SPIClass *spi_adxl345_uart = NULL; // Dùng tên khác để tránh trùng với
 // Cấu hình UART
 #define UART1_TX_PIN 26 // Chân TX của UART1
 #define UART1_RX_PIN 27 // Chân RX của UART1
-static uint32_t uartBaudRate = 115200; // Tốc độ baud cho UART1
 
 // Hàm ghi một byte vào thanh ghi của ADXL345
 void writeRegister_UART(byte regAddress, byte value) {
@@ -64,15 +63,27 @@ void readRegisters_UART(byte regAddress, byte numBytes, byte *buffer) {
   spi_adxl345_uart->endTransaction();
 }
 
-/**
- * @brief Hàm setup cho chế độ UART to SPI (ADXL345).
- * Khởi tạo UART1, SPI bus và cấu hình cảm biến ADXL345.
- */
+void uart_calibrateStatic(){
+  long sumX=0, sumY=0, sumZ=0;
+  byte raw[6];
+  for (int i=0; i< CALIB_SAMPLES; i++){
+    readRegisters_UART(ADXL345_DATAX0, 6, raw);
+    int16_t xr = (raw[1] << 8) | raw[0];
+    int16_t yr = (raw[3] << 8) | raw[2];
+    int16_t zr = (raw[5] << 8) | raw[4];
+    sumX += xr; sumY+= yr; sumZ += zr;
+    delay(10);
+  }
+  X_uart_offset = (sumX/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+  y_uart_offset = (sumY/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+  z_uart_offset = (sumZ/(float)CALIB_SAMPLES)/ADXL345_LSB_PER_G;
+}
+
 void UARTtoSPI_setup() {
   Serial.println("[UARTtoSPI] Khởi tạo ADXL345 qua SPI...");
 
   // Khởi tạo UART1 nếu chưa được khởi tạo
-  Serial1.begin(uartBaudRate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
   Serial.println("[UARTtoSPI] Khởi động UART1 thành công.");
 
   // Cấu hình chân CS
@@ -92,7 +103,6 @@ void UARTtoSPI_setup() {
 
   if (deviceID != 0xE5) {
     Serial.println("[UARTtoSPI] Khong tim thay ADXL345! Vui long kiem tra ket noi.");
-    // Có thể thêm vòng lặp while(true) hoặc cờ lỗi để dừng nếu không tìm thấy
   } else {
     Serial.println("[UARTtoSPI] ADXL345 da duoc tim thay.");
     // Cấu hình ADXL345
@@ -100,64 +110,57 @@ void UARTtoSPI_setup() {
     writeRegister_UART(ADXL345_POWER_CTL, ADXL345_MEASURE);
     Serial.println("[UARTtoSPI] ADXL345 da duoc cau hinh.");
   }
-
-  // Cập nhật trạng thái trên LCD
+  Serial.println("Gia tri tinh...");
+  uart_calibrateStatic();
+  Serial.printf("Offsets: X=%.3f Y=%3f Z=%3f\n", X_uart_offset,  y_uart_offset, z_uart_offset);
   lcd.printStatus("UART", "SPI", globalspiFrequency);
   delay(100);
 }
 
-/**
- * @brief Hàm loop cho chế độ UART to SPI (ADXL345).
- * Lắng nghe lệnh qua UART1 để đọc gia tốc và gửi kết quả.
- */
 void UARTtoSPI_loop() {
-  static unsigned long lastReadTime = 0;
-  const long readInterval = 500; // Đọc mỗi 500ms để không quá tải cảm biến
+  byte rawData[6];
+  readRegisters_UART(ADXL345_DATAX0, 6, rawData);
 
-  if (Serial1.available()) {
-    char command = Serial1.read();
-    if (command == 'A') { // Yêu cầu đọc gia tốc
-      byte rawData[6];
-      readRegisters_UART(ADXL345_DATAX0, 6, rawData);
+  // Kết hợp các byte thấp và cao thành giá trị 16-bit
+  int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
+  int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
+  int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
 
-      int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
-      int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
-      int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
+  float x_g = (float)x_raw / ADXL345_LSB_PER_G;
+  float y_g = (float)y_raw / ADXL345_LSB_PER_G;
+  float z_g = (float)z_raw / ADXL345_LSB_PER_G;
 
-      float x_g = (float)x_raw / ADXL345_LSB_PER_G;
-      float y_g = (float)y_raw / ADXL345_LSB_PER_G;
-      float z_g = (float)z_raw / ADXL345_LSB_PER_G;
+  float x_dyn = x_g - X_uart_offset;
+  float y_dyn = y_g - y_uart_offset;
+  float z_dyn = z_g - z_uart_offset;
 
-      // Gửi kết quả trở lại qua UART1
-      Serial1.print("Accel:");
-      Serial1.print(x_g, 2); Serial1.print(",");
-      Serial1.print(y_g, 2); Serial1.print(",");
-      Serial1.print(z_g, 2); Serial1.println("g");
-      Serial.printf("[UARTtoSPI] Gửi gia tốc: X:%.2f, Y:%.2f, Z:%.2fg qua UART1\n", x_g, y_g, z_g);
-    }
-  }
+  float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
+  // Hiển thị lên Serial Monitor
+  Serial.print("[UARTtoSPI] Gia tri thap (X, Y, Z): ");
+  Serial.print(x_raw);
+  Serial.print("\t");
+  Serial.print(y_raw);
+  Serial.print("\t");
+  Serial.println(z_raw);
 
-  // Cập nhật LCD thường xuyên để hiển thị trạng thái
-  if (millis() - lastReadTime >= readInterval) {
-    lastReadTime = millis();
-    byte rawData[6];
-    readRegisters_UART(ADXL345_DATAX0, 6, rawData);
+  Serial.print("[UARTtoSPI] Gia toc (X, Y, Z): ");
+  Serial.print(x_g, 2);
+  Serial.print("g\t");
+  Serial.print(y_g, 2);
+  Serial.print("g\t");
+  Serial.print(z_g, 2);
+  Serial.println("g");
 
-    int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
-    int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
-    int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
-
-    float x_g = (float)x_raw / ADXL345_LSB_PER_G;
-    float y_g = (float)y_raw / ADXL345_LSB_PER_G;
-    float z_g = (float)z_raw / ADXL345_LSB_PER_G;
-
+  Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
     lcd.setCursor(0, 0);
     lcd.print("IN:UART  OUT:SPI");
-    
     lcd.setCursor(0, 1);
-    lcd.print("X:"); lcd.print(x_g, 1);
-    lcd.print("Y:"); lcd.print(y_g, 1);
-    lcd.print("Z:"); lcd.print(z_g, 1); 
+    lcd.print("SP:");
+    lcd.print(globalspiFrequency/1000);
+    lcd.print("KHz ");
+    lcd.print("A=");
+    lcd.print(a_dyn, 1);
     lcd.print("g");
-  }
+
+    delay(300);
 }

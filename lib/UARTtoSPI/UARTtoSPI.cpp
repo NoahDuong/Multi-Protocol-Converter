@@ -136,31 +136,16 @@ void UARTtoSPI_loop() {
 
   float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
   // Hiển thị lên Serial Monitor
-  Serial.print("[UARTtoSPI] Gia tri thap (X, Y, Z): ");
-  Serial.print(x_raw);
-  Serial.print("\t");
-  Serial.print(y_raw);
-  Serial.print("\t");
-  Serial.println(z_raw);
-
-  Serial.print("[UARTtoSPI] Gia toc (X, Y, Z): ");
-  Serial.print(x_g, 2);
-  Serial.print("g\t");
-  Serial.print(y_g, 2);
-  Serial.print("g\t");
-  Serial.print(z_g, 2);
-  Serial.println("g");
-
   Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
-    lcd.setCursor(0, 0);
-    lcd.print("IN:UART  OUT:SPI");
-    lcd.setCursor(0, 1);
-    lcd.print("SP:");
-    lcd.print(globalspiFrequency/1000);
-    lcd.print("KHz ");
-    lcd.print("A=");
-    lcd.print(a_dyn, 1);
-    lcd.print("g");
+    // lcd.setCursor(0, 0);
+    // lcd.print("IN:UART  OUT:SPI");
+    // lcd.setCursor(0, 1);
+    // lcd.print("SP:");
+    // lcd.print(globalspiFrequency/1000);
+    // lcd.print("KHz ");
+    // lcd.print("A=");
+    // lcd.print(a_dyn, 1);
+    // lcd.print("g");
 
     delay(300);
 }

@@ -59,16 +59,16 @@ void UARTto1Wire_loop() {
     sensors.requestTemperatures();
     float tempC = sensors.getTempCByIndex(0);
 
-    lcd.setCursor(0, 0);
-    lcd.print("IN:UART  OUT:1-W");
+    // lcd.setCursor(0, 0);
+    // lcd.print("IN:UART  OUT:1-W");
     
-    lcd.setCursor(0, 1);
-    lcd.print("Sp:"); lcd.print(onewirespeed / 1000); lcd.print("KHz  ");
+    // lcd.setCursor(0, 1);
+    // lcd.print("Sp:"); lcd.print(onewirespeed / 1000); lcd.print("KHz  ");
 
-    if (tempC != DEVICE_DISCONNECTED_C) {
-      lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
-    } else {
-      lcd.print("Error");
-    }
+    // if (tempC != DEVICE_DISCONNECTED_C) {
+    //   lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
+    // } else {
+    //   lcd.print("Error");
+    // }
   }
 }

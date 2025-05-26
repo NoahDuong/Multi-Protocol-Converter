@@ -61,16 +61,16 @@ void UARTtoI2C_loop() {
     unsigned long readTimeMs = 0;
     float lux = bh.readLux(readTimeMs);
 
-    lcd.setCursor(0, 0);
-    lcd.print("IN:UART  OUT:I2C");
+    // lcd.setCursor(0, 0);
+    // lcd.print("IN:UART  OUT:I2C");
     
-    lcd.setCursor(0, 1);
-    lcd.print("SP:"); lcd.print(globali2cFrequency/ 1000); lcd.print("KHz");
+    // lcd.setCursor(0, 1);
+    // lcd.print("SP:"); lcd.print(globali2cFrequency/ 1000); lcd.print("KHz");
 
-    if (lux >= 0) {
-      lcd.print(lux, 1); lcd.print("Lx");
-    } else {
-      lcd.print("Error");
-    }
+    // if (lux >= 0) {
+    //   lcd.print(lux, 1); lcd.print("Lx");
+    // } else {
+    //   lcd.print("Error");
+    // }
   }
 }

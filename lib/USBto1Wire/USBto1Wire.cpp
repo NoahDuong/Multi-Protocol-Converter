@@ -34,22 +34,22 @@ void USBto1Wire_loop() {
   }
 
   // lcd
-  lcd.setCursor(0, 0);
-  lcd.print("IN:USB  OUT:1-Wi");
+  // lcd.setCursor(0, 0);
+  // lcd.print("IN:USB  OUT:1-Wi");
 
-  lcd.setCursor(0, 1);
-  lcd.print("SP:");
-  lcd.print(onewirespeed/1000);
-  lcd.print("KHz");
+  // lcd.setCursor(0, 1);
+  // lcd.print("SP:");
+  // lcd.print(onewirespeed/1000);
+  // lcd.print("KHz");
 
-  if (tempC != DEVICE_DISCONNECTED_C) {
-    char buf[10];
-    dtostrf(tempC, 5, 2, buf);  // width 5, 2 số thập phân
-    lcd.print(buf);
-    lcd.write(0xDF);            // in ký tự độ (°)
-    lcd.print("C");
-  } else {
-    lcd.print(" Err ");
-    }
+  // if (tempC != DEVICE_DISCONNECTED_C) {
+  //   char buf[10];
+  //   dtostrf(tempC, 5, 2, buf);  // width 5, 2 số thập phân
+  //   lcd.print(buf);
+  //   lcd.write(0xDF);            // in ký tự độ (°)
+  //   lcd.print("C");
+  // } else {
+  //   lcd.print(" Err ");
+  //   }
   }
 }

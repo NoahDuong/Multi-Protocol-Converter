@@ -17,17 +17,14 @@ extern LcdDisplay lcd;
 #define ADXL345_FULL_RES      0x08 // Full resolution (10-bit to 13-bit for 2g to 16g ranges)
 #define ADXL345_RANGE_2G      0x00 // +/- 2g
 
-// Hệ số chuyển đổi từ giá trị thô sang gia tốc (g).
-const float ADXL345_LSB_PER_G = 256.0; // Đối với dải +/-2g, full resolution
+const float ADXL345_LSB_PER_G = 256.0;
 float X_uart_offset = 0, y_uart_offset = 0, z_uart_offset = 0;
 const int CALIB_SAMPLES = 100;
 
-// Khởi tạo đối tượng SPI
-SPIClass *spi_adxl345_uart = NULL; // Dùng tên khác để tránh trùng với USBtoSPI
+SPIClass *spi_adxl345_uart = NULL;
 
-// Cấu hình UART
-#define UART1_TX_PIN 26 // Chân TX của UART1
-#define UART1_RX_PIN 27 // Chân RX của UART1
+#define UART1_TX_PIN 26
+#define UART1_RX_PIN 27
 
 // Hàm ghi một byte vào thanh ghi của ADXL345
 void writeRegister_UART(byte regAddress, byte value) {
@@ -80,21 +77,17 @@ void uart_calibrateStatic(){
 }
 
 void UARTtoSPI_setup() {
-  Serial.println("[UARTtoSPI] Khởi tạo ADXL345 qua SPI...");
+  Serial1.println("[UARTtoSPI] Khởi tạo ADXL345 qua SPI...");
 
-  // Khởi tạo UART1 nếu chưa được khởi tạo
   Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
-  Serial.println("[UARTtoSPI] Khởi động UART1 thành công.");
-
-  // Cấu hình chân CS
+  Serial1.println("[UARTtoSPI] Khởi động UART1 thành công.");
   pinMode(ADXL345_SS_PIN, OUTPUT);
-  digitalWrite(ADXL345_SS_PIN, HIGH); // CS ban đầu ở mức cao
+  digitalWrite(ADXL345_SS_PIN, HIGH);
 
-  // Khởi tạo SPI bus (VSPI)
-  if (spi_adxl345_uart == NULL) { // Chỉ khởi tạo một lần
+  if (spi_adxl345_uart == NULL) {
     spi_adxl345_uart = new SPIClass(VSPI);
   }
-  spi_adxl345_uart->begin(ADXL345_SCK_PIN, ADXL345_MISO_PIN, ADXL345_MOSI_PIN, ADXL345_SS_PIN); // SCK, MISO, MOSI, SS
+  spi_adxl345_uart->begin(ADXL345_SCK_PIN, ADXL345_MISO_PIN, ADXL345_MOSI_PIN, ADXL345_SS_PIN);
 
   // Kiểm tra kết nối ADXL345 bằng cách đọc DEVID
   byte deviceID = readRegister_UART(ADXL345_DEVID);
@@ -105,23 +98,35 @@ void UARTtoSPI_setup() {
     Serial.println("[UARTtoSPI] Khong tim thay ADXL345! Vui long kiem tra ket noi.");
   } else {
     Serial.println("[UARTtoSPI] ADXL345 da duoc tim thay.");
-    // Cấu hình ADXL345
+
     writeRegister_UART(ADXL345_DATA_FORMAT, ADXL345_FULL_RES | ADXL345_RANGE_2G);
     writeRegister_UART(ADXL345_POWER_CTL, ADXL345_MEASURE);
     Serial.println("[UARTtoSPI] ADXL345 da duoc cau hinh.");
   }
-  Serial.println("Gia tri tinh...");
+  Serial1.println("Gia tri tinh...");
   uart_calibrateStatic();
-  Serial.printf("Offsets: X=%.3f Y=%3f Z=%3f\n", X_uart_offset,  y_uart_offset, z_uart_offset);
+  Serial1.printf("Offsets: X=%.3f Y=%3f Z=%3f\n", X_uart_offset,  y_uart_offset, z_uart_offset);
   lcd.printStatus("UART", "SPI", globalspiFrequency);
   delay(100);
 }
 
 void UARTtoSPI_loop() {
+  static unsigned long lastprintTime = 0;
+  unsigned long Printinterval = 1000;
+  if (globalspiFrequency <= 1000000) {
+    Printinterval = 10000;
+  } else if (globalspiFrequency <= 4000000) {
+    Printinterval = 4000;
+  } else if (globalspiFrequency <= 10000000) {
+    Printinterval = 1000;
+  }
+
+  if (millis() - lastprintTime >= Printinterval) {
+    lastprintTime = millis();
+
   byte rawData[6];
   readRegisters_UART(ADXL345_DATAX0, 6, rawData);
 
-  // Kết hợp các byte thấp và cao thành giá trị 16-bit
   int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
   int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
   int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
@@ -135,17 +140,6 @@ void UARTtoSPI_loop() {
   float z_dyn = z_g - z_uart_offset;
 
   float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
-  // Hiển thị lên Serial Monitor
-  Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
-    // lcd.setCursor(0, 0);
-    // lcd.print("IN:UART  OUT:SPI");
-    // lcd.setCursor(0, 1);
-    // lcd.print("SP:");
-    // lcd.print(globalspiFrequency/1000);
-    // lcd.print("KHz ");
-    // lcd.print("A=");
-    // lcd.print(a_dyn, 1);
-    // lcd.print("g");
-
-    delay(300);
+  Serial1.printf("Gia toc dong: %.3f g\n", a_dyn);
+  }
 }

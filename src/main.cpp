@@ -34,14 +34,13 @@ enum OutputProtocolMode {
 // Mảng các tốc độ/tần số có thể lựa chọn
 const uint32_t uartBaudRates[] = {9600, 57600, 115200, 230400};
 const uint32_t i2cFrequencies[] = {100000, 400000, 1000000};
-const uint32_t spiFrequencies[] = {1000000, 4000000, 8000000, 10000000};
+const uint32_t spiFrequencies[] = {1000000, 4000000, 10000000};
 const uint32_t oneWireSpeeds[] = {16300};
 
-// Biến tốc độ truyền tải toàn cục - sẽ được cập nhật từ các mảng trên
-uint32_t globaluartbaudrate = uartBaudRates[2]; // Mặc định 115200
-uint32_t globali2cFrequency = i2cFrequencies[1]; // Mặc định 400kHz
-uint32_t globalspiFrequency = spiFrequencies[0];   // Mặc định 1MHz
-uint32_t onewirespeed = oneWireSpeeds[0];       // Mặc định
+uint32_t globaluartbaudrate = uartBaudRates[2];
+uint32_t globali2cFrequency = i2cFrequencies[1];
+uint32_t globalspiFrequency = spiFrequencies[0];
+uint32_t onewirespeed = oneWireSpeeds[0];
 
 // Biến trạng thái hiện tại
 volatile InputSourceMode currentInputSource = INPUT_SOURCE_USB;

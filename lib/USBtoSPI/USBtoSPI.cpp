@@ -18,16 +18,12 @@ extern LcdDisplay lcd;
 #define ADXL345_FULL_RES      0x08 // Full resolution (10-bit to 13-bit for 2g to 16g ranges)
 #define ADXL345_RANGE_2G      0x00 // +/- 2g
 
-// Hệ số chuyển đổi từ giá trị thô sang gia tốc (g).
 const float ADXL345_LSB_PER_G = 256.0; // Đối với dải +/-2g, full resolution
 float x_offset= 0, y_offset= 0, z_offset= 0;
 const int CALIB_SAMPLES=100;
 
-// Khởi tạo đối tượng SPI
 SPIClass *spi_adxl345 = NULL; // Con trỏ đến đối tượng SPIClass
-
-// Tốc độ SPI (ADXL345 hỗ trợ tới 5 MHz, dùng 4 MHz an toàn)
-static uint32_t spiSpeed = 4000000; // 4 MHz
+static uint32_t spiSpeed = globalspiFrequency;
 
 // Hàm ghi một byte vào thanh ghi của ADXL345
 void writeRegister(byte regAddress, byte value) {
@@ -81,12 +77,10 @@ void calibrateStatic(){
 
 void USBtoSPI_setup() {
   Serial.println("[USBtoSPI] Khởi tạo ADXL345 qua SPI...");
-  // Cấu hình chân CS
   pinMode(ADXL345_SS_PIN, OUTPUT);
-  digitalWrite(ADXL345_SS_PIN, HIGH); // CS ban đầu ở mức cao
+  digitalWrite(ADXL345_SS_PIN, HIGH);
 
-  // Khởi tạo SPI bus (VSPI)
-  if (spi_adxl345 == NULL) { // Chỉ khởi tạo một lần
+  if (spi_adxl345 == NULL) {
     spi_adxl345 = new SPIClass(VSPI);
   }
   spi_adxl345->begin(ADXL345_SCK_PIN, ADXL345_MISO_PIN, ADXL345_MOSI_PIN, ADXL345_SS_PIN); // SCK, MISO, MOSI, SS
@@ -98,9 +92,9 @@ void USBtoSPI_setup() {
 
   if (deviceID != 0xE5) {
     Serial.println("[USBtoSPI] Khong tim thay ADXL345! Vui long kiem tra ket noi.");
-    // Có thể thêm vòng lặp while(true) hoặc cờ lỗi để dừng nếu không tìm thấy
   } else {
     Serial.println("[USBtoSPI] ADXL345 da duoc tim thay.");
+
     // Cấu hình ADXL345
     writeRegister(ADXL345_DATA_FORMAT, ADXL345_FULL_RES | ADXL345_RANGE_2G);
     writeRegister(ADXL345_POWER_CTL, ADXL345_MEASURE);
@@ -110,40 +104,49 @@ void USBtoSPI_setup() {
   calibrateStatic();
   Serial.printf("Offsets: X=%.3f Y=%3f Z=%3f\n", x_offset,  y_offset, z_offset);
   lcd.printStatus("USB", "SPI", spiSpeed);
-  delay(100); // Đợi một chút để cảm biến khởi động
+  delay(100);
 }
 
 void USBtoSPI_loop() {
-  byte rawData[6];
-  readRegisters(ADXL345_DATAX0, 6, rawData);
+  static unsigned long lastPrinttime = 0;
+  unsigned long printInterval = 1000;
+  if (globalspiFrequency <= 1000000) {
+    printInterval = 10000;
+  } else if (globalspiFrequency <= 4000000) {
+    printInterval = 4000;
+  } else if (globalspiFrequency <= 10000000) {
+    printInterval = 1000;
+  }
 
-  // Kết hợp các byte thấp và cao thành giá trị 16-bit
-  int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
-  int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
-  int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
+  if (millis() - lastPrinttime >= printInterval) {
+    lastPrinttime = millis();
 
-  float x_g = (float)x_raw / ADXL345_LSB_PER_G;
-  float y_g = (float)y_raw / ADXL345_LSB_PER_G;
-  float z_g = (float)z_raw / ADXL345_LSB_PER_G;
+    byte rawData[6];
+    readRegisters(ADXL345_DATAX0, 6, rawData);
 
-  float x_dyn = x_g - x_offset;
-  float y_dyn = y_g - y_offset;
-  float z_dyn = z_g - z_offset;
+    int16_t x_raw = ((int16_t)rawData[1] << 8) | rawData[0];
+    int16_t y_raw = ((int16_t)rawData[3] << 8) | rawData[2];
+    int16_t z_raw = ((int16_t)rawData[5] << 8) | rawData[4];
 
-  float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
-  // Hiển thị lên Serial Monitor
-  Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
-  // Hiển thị lên LCD
-    // lcd.setCursor(0, 0);
-    // lcd.print("IN:USB   OUT:SPI");
-    
-    // lcd.setCursor(0, 1);
-    // lcd.print("SP:");
-    // lcd.print(globalspiFrequency/1000);
-    // lcd.print("KHz ");
-    // lcd.print("A=");
-    // lcd.print(a_dyn, 1);
-    // lcd.print("g");
+    float x_g = (float)x_raw / ADXL345_LSB_PER_G;
+    float y_g = (float)y_raw / ADXL345_LSB_PER_G;
+    float z_g = (float)z_raw / ADXL345_LSB_PER_G;
 
-  delay(300);
+    float x_dyn = x_g - x_offset;
+    float y_dyn = y_g - y_offset;
+    float z_dyn = z_g - z_offset;
+    float a_dyn = sqrt(x_dyn*x_dyn + y_dyn*y_dyn + z_dyn*z_dyn);
+    Serial.printf("Gia toc dong: %.3f g\n", a_dyn);
+    // Hiển thị lên LCD
+      // lcd.setCursor(0, 0);
+      // lcd.print("IN:USB   OUT:SPI");
+      
+      // lcd.setCursor(0, 1);
+      // lcd.print("SP:");
+      // lcd.print(globalspiFrequency/1000);
+      // lcd.print("KHz ");
+      // lcd.print("A=");
+      // lcd.print(a_dyn, 1);
+      // lcd.print("g");
+  }
 }

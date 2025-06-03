@@ -128,7 +128,7 @@ void updateDisplay() {
   String inputSpeedDisplay = String(globaluartbaudrate / 1000) + "k";
   if (globaluartbaudrate >= 1000000) inputSpeedDisplay = String(globaluartbaudrate / 1000000) + "M";
   
-  lcd.print("ISP:" + inputSpeedDisplay + " OSP:" + speedStr);
+  lcd.print("Is:" + inputSpeedDisplay + " Os:" + speedStr);
 }
 
 
@@ -203,6 +203,13 @@ void setup() {
   while (!Serial && millis() < 3000); // Đợi Serial Monitor
   Serial.println("\n[SYSTEM] Booting up...");
 
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX);
+  if (Serial1) {
+    Serial.println("[main::setup() on COM6] Serial1 (COM8) initialized. Sending test message to COM8...");
+    Serial1.println("[main::setup() on COM8] Serial1 (COM8) TEST PRINT - If you see this, Serial1 in setup() is OK!");
+  } else {
+    Serial.println("[main::setup() on COM6] Serial1 (COM8) FAILED to initialize!");
+  }
   // Khởi tạo I2C bus ban đầu cho LCD và các thiết bị I2C khác
   // Chân SDA, SCL mặc định của ESP32 thường là 21, 22
   Wire.begin(21, 22, globali2cFrequency); // Khởi tạo Wire với tần số mặc định

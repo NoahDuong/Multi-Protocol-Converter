@@ -34,8 +34,8 @@ enum OutputProtocolMode {
 // Mảng các tốc độ/tần số có thể lựa chọn
 const uint32_t uartBaudRates[] = {9600, 57600, 115200, 230400};
 const uint32_t i2cFrequencies[] = {100000, 400000, 1000000};
-const uint32_t spiFrequencies[] = {1000000, 4000000, 8000000, 10000000}; // 1MHz, 4MHz, 8MHz, 10MHz
-const uint32_t oneWireSpeeds[] = {16300}; // Tốc độ 1-Wire (thường cố định hoặc ít tùy chọn)
+const uint32_t spiFrequencies[] = {1000000, 4000000, 8000000, 10000000};
+const uint32_t oneWireSpeeds[] = {16300};
 
 // Biến tốc độ truyền tải toàn cục - sẽ được cập nhật từ các mảng trên
 uint32_t globaluartbaudrate = uartBaudRates[2]; // Mặc định 115200

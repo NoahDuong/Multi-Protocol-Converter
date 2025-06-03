@@ -22,7 +22,6 @@ void UARTto1Wire_setup() {
   } else {
     Serial1.println("[UARTto1Wire] Cảm biến DS18B20 khởi động thành công.");
   }
-  
   lcd.printStatus("UART", "1-Wire", globaluartbaudrate);
   delay(100);
 }
@@ -30,7 +29,7 @@ void UARTto1Wire_setup() {
 
 void UARTto1Wire_loop() {
   static unsigned long lastReadTime = 0;
-  const long readInterval = 500; // Đọc mỗi 500ms để không quá tải cảm biến
+  const long readInterval = 500;
   
   if (millis() - lastReadTime >= readInterval) {
     lastReadTime = millis();
@@ -39,7 +38,7 @@ void UARTto1Wire_loop() {
 
     Serial1.print("[UARTto1Wire] Nhiệt độ:");
     if (tempC != DEVICE_DISCONNECTED_C) {
-      Serial1.print(tempC); // 2 chữ số thập phân
+      Serial1.print(tempC);
       Serial1.println("C");
     } else {
       Serial.println("Error:DS18B20_DISCONNECTED");

@@ -22,23 +22,25 @@ void USBtoI2C_loop() {
   static unsigned long lastreadtime = 0;
   unsigned long readinterval = 1000;
 
-  if (globali2cFrequency == 100000) { // 100kHz
-    readinterval = 1000; // Cập nhật mỗi 1 giây
-  } else if (globali2cFrequency == 400000) { // 400kHz
-    readinterval = 4000; // Cập nhật mỗi 4 giây
+  if (globali2cFrequency == 100000) {
+    readinterval = 10000;
+  } else if (globali2cFrequency == 400000) {
+    readinterval = 4000;
+  } else if (globali2cFrequency == 1000000) {
+    readinterval = 1000;
   }
+
 
   if (millis() - lastreadtime >= readinterval) {
     lastreadtime = millis();
     unsigned long readTimeMs = 0;
     float lux = bh.readLux(readTimeMs); // Đọc lux từ cảm biến BH1750
 
-    // Hiển thị lên Serial Monitor
     Serial.print("[USBtoI2C] Freq: ");
     Serial.print(globali2cFrequency / 1000);
     Serial.print("kHz. Interval: ");
-    Serial.print(readinterval);
-    Serial.print("ms. Lux: ");
+    Serial.print(readinterval/1000);
+    Serial.print("s. Lux: ");
     if (lux >= 0) {
       Serial.print(lux);
       Serial.println(" lx");
@@ -47,16 +49,13 @@ void USBtoI2C_loop() {
     }
   }
 
-  // Hiển thị lên LCD
   tcaselect(LCD_CHANNEL);
   // lcd.setCursor(0, 0);
   // lcd.print("IN:USB  OUT:I2C ");
-
   // lcd.setCursor(0, 1);
   // lcd.print("SP:");
   // lcd.print(globali2cFrequency / 1000);
   // lcd.print("kHz ");
-
   // if (lux >= 0) {
   //   char buf[6];
   //   snprintf(buf, sizeof(buf), "%4.1f", lux);
@@ -65,6 +64,5 @@ void USBtoI2C_loop() {
   // } else {
   //   lcd.print("Error");
   // }
-
   delay(10);
 }

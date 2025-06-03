@@ -23,21 +23,19 @@ void UARTto1Wire_setup() {
     Serial1.println("[UARTto1Wire] Cảm biến DS18B20 khởi động thành công.");
   }
   
-  // Cập nhật trạng thái trên LCD
   lcd.printStatus("UART", "1-Wire", globaluartbaudrate);
   delay(100);
 }
 
 
 void UARTto1Wire_loop() {
-  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
   static unsigned long lastReadTime = 0;
   const long readInterval = 500; // Đọc mỗi 500ms để không quá tải cảm biến
-
-    char command = Serial1.read();
-    if (command == 'T') { // Yêu cầu đọc nhiệt độ
-      sensors.requestTemperatures();
-      float tempC = sensors.getTempCByIndex(0);
+  
+  if (millis() - lastReadTime >= readInterval) {
+    lastReadTime = millis();
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
 
     Serial1.print("[UARTto1Wire] Nhiệt độ:");
     if (tempC != DEVICE_DISCONNECTED_C) {
@@ -48,24 +46,5 @@ void UARTto1Wire_loop() {
       Serial1.println("[UARTto1Wire] Lỗi: Cảm biến DS18B20 không kết nối.");
     
     }
-  }
-
-  // Cập nhật LCD thường xuyên để hiển thị trạng thái
-  if (millis() - lastReadTime >= readInterval) {
-    lastReadTime = millis();
-    sensors.requestTemperatures();
-    float tempC = sensors.getTempCByIndex(0);
-
-    // lcd.setCursor(0, 0);
-    // lcd.print("IN:UART  OUT:1-W");
-    
-    // lcd.setCursor(0, 1);
-    // lcd.print("Sp:"); lcd.print(onewirespeed / 1000); lcd.print("KHz  ");
-
-    // if (tempC != DEVICE_DISCONNECTED_C) {
-    //   lcd.print(tempC, 1); lcd.write(0xDF); lcd.print("C");
-    // } else {
-    //   lcd.print("Error");
-    // }
   }
 }

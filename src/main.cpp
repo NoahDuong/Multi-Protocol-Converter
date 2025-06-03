@@ -141,7 +141,9 @@ void applySettingsAndInitialize() {
   Serial.printf("I2C Frequency: %lu\n", globali2cFrequency);
   Serial.printf("SPI Frequency: %lu\n", globalspiFrequency);
   Serial.printf("1-Wire Speed: %lu\n", onewirespeed);
-
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX); // Đảm bảo UART1 input được cập nhật
+  Serial.printf("[SYSTEM] UART1 (input) re-initialized to %lu bps\n", globaluartbaudrate);
+  
   // Khởi tạo lại Wire với tần số mới nếu cần cho I2C (cho LCD và cảm biến)
   // TCA9548A.h sử dụng Wire, nên Wire cần được cấu hình đúng.
   // Các module I2C (Bh1750) sẽ sử dụng tần số này.
@@ -166,20 +168,10 @@ void applySettingsAndInitialize() {
         USBto1Wire_setup(); // Sử dụng onewirespeed
         break;
     }
-  } else { // INPUT_SOURCE_UART
-    // UART1_VS_UART2_setup(); // Khởi tạo UART1 (ngõ vào) với globaluartbaudrate
-                            // Điều này cần được gọi một cách cẩn thận để không xung đột.
-                            // Tạm thời giả định Serial1 luôn được thiết lập với globaluartbaudrate.
-    Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX); // Đảm bảo UART1 input được cập nhật
-    Serial.printf("[SYSTEM] UART1 (input) re-initialized to %lu bps\n", globaluartbaudrate);
-
-
+  } else {
     switch (currentOutputProtocol) {
       case PROTOCOL_UART:
-        // UART1 đã được setup ở trên, UART2 được setup trong UART1_VS_UART2_setup (một phần của USB2UART.cpp)
-        // Hoặc cần một hàm riêng cho UART1 <-> UART2 setup
         UART1_VS_UART2_setup(); // Sẽ setup Serial1 và Serial2 (cho chế độ UART-UART)
-                                // USB2UART.cpp chứa hàm này, nó sẽ dùng globaluartbaudrate
         break;
       case PROTOCOL_I2C:
         // Wire.setClock(globali2cFrequency); // Đã gọi ở trên

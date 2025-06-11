@@ -9,29 +9,25 @@
 #include "UARTtoSPI.h"
 #include "USB2UART.cpp"
 
-// Định nghĩa chân GPIO cho các nút nhấn
-#define BUTTON_INPUT_SOURCE      0  // Chọn ngõ vào USB/UART1
-#define BUTTON_OUTPUT_PROTOCOL   4  // Chọn giao thức ngõ ra UART2/I2C/SPI/1-Wire
-#define BUTTON_INPUT_SPEED       15  // Điều chỉnh tốc độ ngõ vào UART (globaluartbaudrate)
-#define BUTTON_OUTPUT_SPEED      2 // Điều chỉnh tốc độ ngõ ra (I2C, SPI, 1-Wire)
+#define BUTTON_INPUT_SOURCE      32 
+#define BUTTON_OUTPUT_PROTOCOL   4
+#define BUTTON_INPUT_SPEED       15
+#define BUTTON_OUTPUT_SPEED      2
 
-// Enum cho nguồn vào
 enum InputSourceMode {
   INPUT_SOURCE_USB,
   INPUT_SOURCE_UART,
   INPUT_SOURCE_COUNT
 };
 
-// Enum cho giao thức ngõ ra
 enum OutputProtocolMode {
-  PROTOCOL_UART,    // UART1 <-> UART2 hoặc USB <-> UART2
+  PROTOCOL_UART,
   PROTOCOL_I2C,
   PROTOCOL_SPI,
   PROTOCOL_ONEWIRE,
   OUTPUT_PROTOCOL_COUNT
 };
 
-// Mảng các tốc độ/tần số có thể lựa chọn
 const uint32_t uartBaudRates[] = {9600, 57600, 115200, 230400};
 const uint32_t i2cFrequencies[] = {100000, 400000, 1000000};
 const uint32_t spiFrequencies[] = {1000000, 4000000, 10000000};
@@ -50,7 +46,7 @@ volatile OutputProtocolMode currentOutputProtocol = PROTOCOL_UART;
 volatile int currentUartBaudRateIndex = 2;
 volatile int currentI2cFrequencyIndex = 1;
 volatile int currentSpiFrequencyIndex = 0;
-volatile int currentOneWireSpeedIndex = 0; // Hiện tại chỉ có 1 lựa chọn
+volatile int currentOneWireSpeedIndex = 0;
 
 // Biến cờ cho các nút nhấn
 volatile bool inputSourceButtonPressed = false;
@@ -95,23 +91,23 @@ void IRAM_ATTR ISR_outputSpeedButton() {
 // --- Hàm cập nhật hiển thị LCD ---
 void updateDisplay() {
   lcd.clear();
-  String inputStr = (currentInputSource == INPUT_SOURCE_USB) ? "USB" : "UART1";
+  String inputStr = (currentInputSource == INPUT_SOURCE_USB) ? "USB" : "UART";
   String outputStr = "";
   String speedStr = "";
 
   switch (currentOutputProtocol) {
     case PROTOCOL_UART:
-      outputStr = "UART2";
-      speedStr = String(globaluartbaudrate / 1000) + "k"; // Hiển thị tốc độ UART đang dùng cho output
+      outputStr = "UART";
+      speedStr = String(globaluartbaudrate / 1000) + "k";
       break;
     case PROTOCOL_I2C:
       outputStr = "I2C";
       speedStr = String(globali2cFrequency / 1000) + "k";
+      if (globali2cFrequency >= 1000000) speedStr = String(globali2cFrequency / 1000000) + "M";
       break;
     case PROTOCOL_SPI:
       outputStr = "SPI";
-      speedStr = String(globalspiFrequency / 1000) + "k"; // Sẽ là MHz nếu > 1000k
-      if (globalspiFrequency >= 1000000) speedStr = String(globalspiFrequency / 1000000) + "M";
+      speedStr = String(globalspiFrequency / 1000000) + "M";
       break;
     case PROTOCOL_ONEWIRE:
       outputStr = "1WIRE";
@@ -130,8 +126,6 @@ void updateDisplay() {
   lcd.print("Is:" + inputSpeedDisplay + " Os:" + speedStr);
 }
 
-
-// --- Hàm áp dụng cài đặt và khởi tạo lại ngoại vi ---
 void applySettingsAndInitialize() {
   Serial.println("\n[SYSTEM] Applying new settings...");
   Serial.printf("Input Source: %s\n", (currentInputSource == INPUT_SOURCE_USB) ? "USB" : "UART1");
@@ -140,70 +134,55 @@ void applySettingsAndInitialize() {
   Serial.printf("I2C Frequency: %lu\n", globali2cFrequency);
   Serial.printf("SPI Frequency: %lu\n", globalspiFrequency);
   Serial.printf("1-Wire Speed: %lu\n", onewirespeed);
-  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX); // Đảm bảo UART1 input được cập nhật
+  Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX);
   Serial.printf("[SYSTEM] UART1 (input) re-initialized to %lu bps\n", globaluartbaudrate);
-  
-  // Khởi tạo lại Wire với tần số mới nếu cần cho I2C (cho LCD và cảm biến)
-  // TCA9548A.h sử dụng Wire, nên Wire cần được cấu hình đúng.
-  // Các module I2C (Bh1750) sẽ sử dụng tần số này.
-  Wire.setClock(globali2cFrequency); // Đảm bảo tần số I2C được cập nhật cho LCD và BH1750
-                                    // nếu chúng được truy cập trước khi module I2C cụ thể được setup.
+
+  Wire.setClock(globali2cFrequency);
 
   // Dựa trên nguồn vào và giao thức ra để gọi hàm setup tương ứng
   if (currentInputSource == INPUT_SOURCE_USB) {
     switch (currentOutputProtocol) {
       case PROTOCOL_UART:
-        USB2UART_setup(); // Sử dụng globaluartbaudrate cho Serial2
+        USB2UART_setup();
         break;
       case PROTOCOL_I2C:
-        // Wire.begin đã được gọi trong setup() chính, chỉ cần setClock và gọi setup của module
-        // Wire.setClock(globali2cFrequency); // Đã gọi ở trên
-        USBtoI2C_setup(); // Sử dụng globali2cFrequency
+        USBtoI2C_setup();
         break;
       case PROTOCOL_SPI:
-        USBtoSPI_setup(); // Sử dụng globalspiFrequency
+        USBtoSPI_setup();
         break;
       case PROTOCOL_ONEWIRE:
-        USBto1Wire_setup(); // Sử dụng onewirespeed
+        USBto1Wire_setup();
         break;
     }
   } else {
     switch (currentOutputProtocol) {
       case PROTOCOL_UART:
-        UART1_VS_UART2_setup(); // Sẽ setup Serial1 và Serial2 (cho chế độ UART-UART)
+        UART1_VS_UART2_setup();
         break;
       case PROTOCOL_I2C:
-        // Wire.setClock(globali2cFrequency); // Đã gọi ở trên
-        UARTtoI2C_setup(); // Sử dụng globaluartbaudrate cho Serial1 (input), globali2cFrequency cho I2C
+        UARTtoI2C_setup();
         break;
       case PROTOCOL_SPI:
-        UARTtoSPI_setup(); // Sử dụng globaluartbaudrate cho Serial1 (input), globalspiFrequency cho SPI
+        UARTtoSPI_setup();
         break;
       case PROTOCOL_ONEWIRE:
-        UARTto1Wire_setup(); // Sử dụng globaluartbaudrate cho Serial1 (input), onewirespeed
+        UARTto1Wire_setup();
         break;
     }
   }
   updateDisplay();
   Serial.println("[SYSTEM] Settings applied and peripherals initialized.");
-  delay(100); // Thời gian để ổn định
+  delay(100);
 }
 
 void setup() {
   Serial.begin(globaluartbaudrate);
-  while (!Serial && millis() < 3000); // Đợi Serial Monitor
+  while (!Serial && millis() < 3000);
   Serial.println("\n[SYSTEM] Booting up...");
 
   Serial1.begin(globaluartbaudrate, SERIAL_8N1, UART1_RX, UART1_TX);
-  if (Serial1) {
-    Serial.println("[main::setup() on COM6] Serial1 (COM8) initialized. Sending test message to COM8...");
-    Serial1.println("[main::setup() on COM8] Serial1 (COM8) TEST PRINT - If you see this, Serial1 in setup() is OK!");
-  } else {
-    Serial.println("[main::setup() on COM6] Serial1 (COM8) FAILED to initialize!");
-  }
-  // Khởi tạo I2C bus ban đầu cho LCD và các thiết bị I2C khác
-  // Chân SDA, SCL mặc định của ESP32 thường là 21, 22
-  Wire.begin(21, 22, globali2cFrequency); // Khởi tạo Wire với tần số mặc định
+  Wire.begin(21, 22, globali2cFrequency);
   Serial.println("[SYSTEM] I2C bus initialized.");
 
   // Cấu hình các nút nhấn
@@ -219,19 +198,15 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(BUTTON_OUTPUT_SPEED), ISR_outputSpeedButton, FALLING);
   Serial.println("[SYSTEM] Buttons initialized with interrupts.");
 
-  // Khởi tạo LCD
-  lcd.init(); // Hàm này sẽ tự động chọn kênh LCD qua tcaselect
+  lcd.init();
   Serial.println("[SYSTEM] LCD initialized.");
 
-  // Khởi tạo chế độ mặc định
   applySettingsAndInitialize();
-
   Serial.println("[SYSTEM] Setup complete. Default mode active.");
 }
 
 void loop() {
   bool settingsChanged = false;
-
   // Xử lý nút chọn nguồn vào
   if (inputSourceButtonPressed) {
     inputSourceButtonPressed = false;
@@ -261,10 +236,7 @@ void loop() {
   if (outputSpeedButtonPressed) {
     outputSpeedButtonPressed = false;
     switch (currentOutputProtocol) {
-      case PROTOCOL_UART: // Nếu ngõ ra là UART (UART-UART mode)
-        // Trong trường hợp này, nút này cũng có thể điều chỉnh globaluartbaudrate
-        // hoặc một biến riêng cho tốc độ UART2 nếu muốn phân biệt.
-        // Để đơn giản, ở đây cũng thay đổi globaluartbaudrate, ảnh hưởng đến cả Serial1 và Serial2 trong chế độ UART-UART.
+      case PROTOCOL_UART:
         currentUartBaudRateIndex = (currentUartBaudRateIndex + 1) % (sizeof(uartBaudRates) / sizeof(uartBaudRates[0]));
         globaluartbaudrate = uartBaudRates[currentUartBaudRateIndex];
         Serial.printf("[BTN] Output UART (UART2) Baudrate (global) changed to: %lu\n", globaluartbaudrate);
@@ -287,13 +259,9 @@ void loop() {
     }
     settingsChanged = true;
   }
-
-  // Nếu có thay đổi cài đặt, áp dụng và khởi tạo lại
   if (settingsChanged) {
     applySettingsAndInitialize();
   }
-
-  // Thực thi loop của chế độ hiện tại
   if (currentInputSource == INPUT_SOURCE_USB) {
     switch (currentOutputProtocol) {
       case PROTOCOL_UART:    USB2UART_loop(); break;
@@ -301,7 +269,7 @@ void loop() {
       case PROTOCOL_SPI:     USBtoSPI_loop(); break;
       case PROTOCOL_ONEWIRE: USBto1Wire_loop(); break;
     }
-  } else { // INPUT_SOURCE_UART
+  } else {
     switch (currentOutputProtocol) {
       case PROTOCOL_UART:    UART2UART_loop(); break;
       case PROTOCOL_I2C:     UARTtoI2C_loop(); break;
@@ -310,5 +278,5 @@ void loop() {
     }
   }
 
-  delay(10); // Giảm tải CPU
+  delay(10);
 }
